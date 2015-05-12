@@ -64,15 +64,40 @@ class ValidaCFDI {
      * Arranca el cliente SOAP para validar un CFDI con el WS del SAT.
      *
      * @access public
-     * @param  array  $datos
+     * @param  LecturaXML  $lecturaXML
      * @return array
      */
-    public function validar(array $datos = array())
+    public function validar(LecturaXML $lecturaXML)
     {
-        if (empty($datos) === false) {
-            $this->CFDi = $datos;
-        }
+        $datos = $lecturaXML->call(function($xml) {
 
+            // extraer UUID:
+            $tfd = $xml->getElementsByTagNameNS('http://www.sat.gob.mx/TimbreFiscalDigital', 'TimbreFiscalDigital');
+            $tfd = $tfd->item(0);
+
+            // extraer RFC emisor:
+            $rfc_emisor = $xml->getElementsByTagName('Emisor');
+            $rfc_emisor = $rfc_emisor->item(0);
+
+            // extraer RFC receptor:
+            $rfc_receptor = $xml->getElementsByTagName('Receptor');
+            $rfc_receptor = $rfc_receptor->item(0);
+
+            // extraer TOTAL de factura:
+            $total = $xml->getElementsByTagNameNS('http://www.sat.gob.mx/cfd/3','Comprobante');
+            $total = $total->item(0);
+
+            return array(
+                're' => $rfc_emisor->getAttribute('rfc'),
+                'rr' => $rfc_receptor->getAttribute('rfc'),
+                'tt' => $total->getAttribute('total'),
+                'id' => $tfd->getAttribute('UUID'),
+            );
+
+            // end callback.
+        });
+
+        $this->CFDi = $datos;
         return $this->consultaCFDi($this->parametrosWS());
     }
 
